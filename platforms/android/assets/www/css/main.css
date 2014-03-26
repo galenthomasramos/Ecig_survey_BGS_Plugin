@@ -1,0 +1,12 @@
+.evllogo {
+	text-align: left;
+}
+.uiclogo {
+	text-align: right;
+}
+
+.offline {
+	visibility: hidden;
+	color: #f00;
+	font-style: italic;
+}
