@@ -1,0 +1,2 @@
+include ':ECigCordova3_3_BGS_PluginCordovaLib'
+include ':ECigCordova3_3_BGS_Plugin'

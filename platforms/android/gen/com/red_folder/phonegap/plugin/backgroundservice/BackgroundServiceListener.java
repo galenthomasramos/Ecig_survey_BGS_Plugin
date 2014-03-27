@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Original file: C:\\Users\\Galen\\Desktop\\cordova 3.3\\ecigcordova3_3\\platforms\\android\\src\\com\\red_folder\\phonegap\\plugin\\backgroundservice\\BackgroundServiceListener.aidl
+ * Original file: C:\\Users\\Galen\\Desktop\\cordova 3.3\\ecigcordova3_3_BGS_Plugin\\platforms\\android\\src\\com\\red_folder\\phonegap\\plugin\\backgroundservice\\BackgroundServiceListener.aidl
  */
 package com.red_folder.phonegap.plugin.backgroundservice;
 public interface BackgroundServiceListener extends android.os.IInterface

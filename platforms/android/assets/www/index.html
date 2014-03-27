@@ -73,6 +73,8 @@
         //var notificationSoundLoc = 'www/audio/notificationsound1.mp3';
         //var notificationSoundLoc = 'android.resource://com.testing.ecigcordova3_3/raw/notificationsound1.mp3';
 
+        var eCigService;
+
         var TobaccoUseIntFileWriter;
         var randomPromptIntFileWriter;
         var suspendFileWriter;
@@ -88,8 +90,6 @@
         var wakeTimeFileString;
         var notificationFileString;
         var loginFileString;
-
-
 
         var delimiter = ', ';
 
@@ -110,10 +110,7 @@
         var didMissDelayedNotification = true;
         var didMissWakeUp = true;
 
-        var stringToWrite = '';
-
         var userID = 'USERID_X';
-        var writePause = 1000;
 
         var date = new Date();
         var hour, min, sec;
@@ -125,16 +122,12 @@
         //var surveysInADay = 50 ;
         var surveysInADay = 7;
 
-        var currentSurveyTaken = -1;
-        var noOfSurveysTaken = 0;
-
         var my_media = null;
         var my_alarm_media = null;
 
         var hasMissedNotification = false;
         var missedNotifications = 0;
 
-        var notificationsToday = 0; //Holds number of notifications that are actually added in a day... number is dependent on when user sets bedtime/waketime/suspends at a point of time in a day
         var notificationCount = 0;
 
         var partitionTimes = [];
@@ -174,30 +167,28 @@
         var goto5a1 = false;
         var gotoCigMenthol = false;
 
-        var suspendMinutes = 0;
-
         var surveyString = "";
 
-        var tempCounter = 0;
-
-        var checkboxCount = 0;
-
-        var loginData = {username:'', password: ''};
-        /*
-        var logintemplate = '<div data-role="content">\
-                                <form id="form-login">\
-                                    <div data-role="fieldcontain" class="ui-hide-label">\
-                                        <label for="input-username">Username:</label>\
-                                         <input type="text" name="input-username" id="input-username" value="" placeholder="Username" />\
-                                    </div>\
-                                    <div data-role="fieldcontain" class="ui-hide-label">\
-                                        <label for="input-password">Password:</label>\
-                                        <input type="password" name="input-password" id="input-password" value="" placeholder="Password" />\
-                                    </div>\
-                                    <input type="button" value="Login" id="button-login" onclick="checkLogin()">\
-                                </form>\
-                            </div>';
-        */
+        var config = {
+            "didMissNotificationArr":        didMissNotificationArr,
+            "notificationTimes":             notificationTimes,
+            "notificationCount":             notificationCount,
+            "currentState":                  currentState,
+            "startedRandomPromptSurvey":     startedRandomPromptSurvey,
+            "finishedRandomPromptSurvey":    finishedRandomPromptSurvey,
+            "missedNotifications":           missedNotifications,
+            "hasMissedNotification":         hasMissedNotification,
+            "didMissDelayedNotification":    didMissDelayedNotification,
+            "didMissWakeUp":                 didMissWakeUp,
+            "surveysInADay":                 surveysInADay,
+            "userID":                        userID,
+            "timeAsleep":                    timeAsleep,
+            "timeAwake":                     timeAwake,
+            "wakeUpFiring":                  wakeUpFiring,
+            "resumeTime":                    resumeTime,
+            "wakeTimeDate":                  wakeTimeDate,
+            "bedTimeDate":                   bedTimeDate
+        };
 
         var delayData = {delaymins:""};
         var delayTemplate = '<h3>Do you want to do the survey now or delay it?</h3>\
@@ -1378,16 +1369,19 @@
 		}
 
 
+
+
 //***************onDeviceReady()
 		function onDeviceReady() {
             console.log("WITHIN onDeviceReady()");
-
-            //playNotificationAudio(media_loc);
-
-
-            //$.mobile.navigate('#productUrgeSurvey');
-
             //determineWakeTimeBedTime();
+
+            //For the BGS Plugin:
+            var serviceName = 'com.red_folder.phonegap.plugin.backgroundservice.EcigService';
+            var factory = cordova.require('com.red_folder.phonegap.plugin.backgroundservice.EcigService');
+
+            eCigService = factory.create(serviceName);
+            go();
 
             window.plugin.notification.local.onadd = function(id, state, json){
                 //console.log('\nonadd() adding #: ' + id.toString());
@@ -1566,7 +1560,72 @@
 
         }
 
+        /**
+         * SERVICE CODE:
+        */
+        function getStatus() {
+           eCigService.getStatus(function(r){displayResult(r)}, function(e){displayError(e)});
+        }
 
+        function displayResult(data) {
+            alert("Is service running: " + data.ServiceRunning);
+        }
+
+        function displayError(data) {
+            alert("We have an error" + data.ErrorMessage + JSON.stringify(data));
+        }
+
+        function handleSuccess(data) {
+            alert("@handleSuccess");
+        }
+
+        function handleError(data) {
+            alert("Error: " + data.ErrorMessage);
+            alert(JSON.stringify(data));
+            //updateView(data);
+        }
+
+        //Writes to label at login
+        function updateHandler(data) {
+            if (data.LatestResult != null) {
+                try {
+                    var resultMessage = document.getElementById("resultMessage");
+                    resultMessage.innerHTML = data.LatestResult.Message;
+                } catch (err) {
+                }
+            }
+        }
+
+        function go() {
+            eCigService.getStatus(function(r){startService(r)}, function(e){displayError(e)});
+        };
+
+        function startService(data) {
+            if (data.ServiceRunning) {
+                enableTimer(data);
+            } else {
+                eCigService.startService(function(r){enableTimer(r)}, function(e){displayError(e)});
+            }
+        }
+
+        function enableTimer(data) {
+            if (data.TimerEnabled) {
+                registerForUpdates(data);
+            } else {
+                eCigService.enableTimer(60000, function(r){registerForUpdates(r)}, function(e){displayError(e)});
+            }
+        }
+
+        function registerForUpdates(data) {
+            if (!data.RegisteredForUpdates) {
+                eCigService.registerForUpdates(function(r){updateHandler(r)}, function(e){displayError(e)});
+            }
+        }
+
+        /*
+        *
+        * End of Service code
+        * */
 
 
         function clearPriorNotifications(callback){
@@ -4013,7 +4072,6 @@
 
         //translates passed string of checkbox to needed data value... on, undefined ---> 2, 1
         function translateCheckBox(passedChecked){
-           checkboxCount += 1;
 
            //console.log('\n' + 'Checkbox ' + checkboxCount.toString() + ' ' + passedChecked);
            if(passedChecked){
@@ -5250,6 +5308,7 @@
                     <h3 align="center">Receiving notifications</h3>
                 </div>
 
+                <div id="resultMessage">None yet</div>
 
             </div>
 
